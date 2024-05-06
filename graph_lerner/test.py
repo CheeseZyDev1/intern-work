@@ -1,4 +1,3 @@
-import datetime
 import remi.gui as gui
 from remi import start, App
 import matplotlib.pyplot as plt
@@ -12,12 +11,8 @@ class GraphLearnerGUI(App):
         super(GraphLearnerGUI, self).__init__(*args)
         self.learner = graph_learner()
         self.graph_containers = {}
-        
 
     def main(self):
-        self.history = []  # เก็บประวัติการเลือก
-        self.history_box = gui.ListBox(width=200, height=300)
-        self.history_box.onselection.do(self.edit_history)
         container = gui.VBox(width=600, height=1000, style={'margin': '0px auto'})
         self.lbl_instruction = gui.Label('Please enter a sequence of numbers, each sequence separated by a new line:')
         self.text_area = gui.TextInput(width=580, height=100, single_line=False, hint='1,2,3,4,5\n7,8,9,10,11')
@@ -66,7 +61,7 @@ class GraphLearnerGUI(App):
             graph_container = gui.VBox(width=580, height=300)
             self.graph_containers[i] = graph_container
             self.output_area.append(graph_container)
-            # ส่งข้อมูลเข้าไปในฟังก์ชัน update_graph เพื่อทำการแสดงผลล่าสุดบนกราฟ
+            # send data to function update_graph for update to graph
             self.update_graph(graph_container, numbers, predicted_next)
             
     def update_graph(self, graph_container, numbers, predicted_next):
@@ -79,7 +74,7 @@ class GraphLearnerGUI(App):
         btn_add_prediction = gui.Button('Add Prediction to Sequence', width=200, height=30)
         btn_randomize = gui.Button('Randomize New Prediction', width=200, height=30)
         
-        self.update_predictions(numbers[-1])  # อัปเดตคำทำนายที่สามตามเลขล่าสุด
+        self.update_predictions(numbers[-1])  # update now prediction
 
         prediction_buttons = []
         predictions = [predicted_next, predicted_next - 1, predicted_next + 10]
@@ -140,30 +135,14 @@ class GraphLearnerGUI(App):
         # Update graph and possibly refresh the available choices
         self.update_graph(graph_container, numbers, new_prediction)
 
-    
     def add_prediction(self, widget, numbers, prediction, graph_container):
-        prediction_record = {"sequence": numbers.copy(), "timestamp": datetime.now()}
-        self.history.append(prediction_record)
-        self.update_history_ui()
         numbers.append(prediction)
-        self.update_graph(graph_container, numbers, prediction)  # อัปเดตกราฟด้วยข้อมูลใหม่
+        self.update_graph(graph_container, numbers, prediction)  # update graph with new data
 
-    def update_history_ui(self):
-        # อัปเดต UI ประวัติ
-        self.history_box.empty()
-        for i, record in enumerate(self.history):
-            self.history_box.append(f'{record["timestamp"]}: {record["sequence"]}')
-
-    def edit_history(self, widget, selected_item):
-        # โหลดข้อมูลประวัติที่เลือกกลับมาแก้ไข
-        history_data = self.history[selected_item]
-        self.text_area.set_value(','.join(map(str, history_data["sequence"])))
-        self.update_graph(self.output_area, history_data["sequence"], history_data["sequence"][-1])
-        
     def plot_sequence(self, sequence, predicted_next):
         plt.figure(figsize=(10, 5))
         plt.plot(range(len(sequence)), sequence, marker='o', linestyle='-', color='blue')
-        predictions = [predicted_next, predicted_next * 2, predicted_next + 10]  # ตัวอย่างของการทำนายสามารถปรับเปลี่ยนตามความต้องการ
+        predictions = [predicted_next, predicted_next -1 , predicted_next + 10]  #
         for i, pred in enumerate(predictions):
             plt.plot(len(sequence), pred, marker='o', color=['red', 'green', 'orange'][i], linestyle='--')
             plt.text(len(sequence), pred, str(pred), ha='center', va='bottom')
