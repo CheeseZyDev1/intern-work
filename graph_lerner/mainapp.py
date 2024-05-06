@@ -61,50 +61,9 @@ class GraphLearnerGUI(App):
             graph_container = gui.VBox(width=580, height=300)
             self.graph_containers[i] = graph_container
             self.output_area.append(graph_container)
-            # ส่งข้อมูลเข้าไปในฟังก์ชัน update_graph เพื่อทำการแสดงผลล่าสุดบนกราฟ
+            # send data to function update_graph for update to graph
             self.update_graph(graph_container, numbers, predicted_next)
             
-    #def update_graph(self, graph_container, numbers, predicted_next):
-        #graph_container.empty()
-
-        #plot_url = self.plot_sequence(numbers, predicted_next)
-        #img = gui.Image(plot_url, width=580, height=200)
-        #label = gui.Label(f'Current sequence: {numbers}')
-
-        #btn_add_prediction = gui.Button('Add Prediction to Sequence', width=200, height=30)
-        #btn_randomize = gui.Button('Randomize New Prediction', width=200, height=30)
-        
-        #prediction_buttons = []
-        #predictions = [predicted_next, predicted_next - 1, predicted_next + 10]
-        #self.selected_predictions = []
-
-        #for idx, pred in enumerate(predictions):
-            #btn = gui.Button(f'Choose Prediction {idx + 1}: {pred}', width=200, height=30)
-            #btn.onclick.do(self.choose_prediction, numbers, pred, graph_container)
-            #prediction_buttons.append(btn)
-
-        #graph_container.append(label)
-        #graph_container.append(img)
-        #for btn in prediction_buttons:
-            #graph_container.append(btn)
-        #graph_container.append(btn_add_prediction)
-        #graph_container.append(btn_randomize)
-
-        #btn_add_prediction.onclick.do(self.add_predictions, numbers, graph_container)
-        #btn_randomize.onclick.do(self.randomize_prediction, numbers, graph_container)
-
-    #def choose_prediction(self, widget, numbers, chosen_prediction, graph_container):
-        #if chosen_prediction in self.selected_predictions:
-        #    self.selected_predictions.remove(chosen_prediction)
-        #    widget.set_text(f'Choose Prediction {numbers.index(chosen_prediction) + 1}: {chosen_prediction}')
-         #   widget.set_enabled(True)
-         #   widget.style['background-color'] = 'Blue'
-        #else:
-           # self.selected_predictions.append(chosen_prediction)
-            #widget.set_text(f'Selected: {chosen_prediction}')
-           # widget.set_enabled(True)
-            #widget.style['background-color'] = 'Green'
-    
     def update_graph(self, graph_container, numbers, predicted_next):
         graph_container.empty()
 
@@ -115,7 +74,7 @@ class GraphLearnerGUI(App):
         btn_add_prediction = gui.Button('Add Prediction to Sequence', width=200, height=30)
         btn_randomize = gui.Button('Randomize New Prediction', width=200, height=30)
         
-        self.update_predictions(numbers[-1])  # อัปเดตคำทำนายที่สามตามเลขล่าสุด
+        self.update_predictions(numbers[-1])  # update now prediction
 
         prediction_buttons = []
         predictions = [predicted_next, predicted_next - 1, predicted_next + 10]
@@ -178,12 +137,12 @@ class GraphLearnerGUI(App):
 
     def add_prediction(self, widget, numbers, prediction, graph_container):
         numbers.append(prediction)
-        self.update_graph(graph_container, numbers, prediction)  # อัปเดตกราฟด้วยข้อมูลใหม่
+        self.update_graph(graph_container, numbers, prediction)  # update graph with new data
 
     def plot_sequence(self, sequence, predicted_next):
         plt.figure(figsize=(10, 5))
         plt.plot(range(len(sequence)), sequence, marker='o', linestyle='-', color='blue')
-        predictions = [predicted_next, predicted_next * 2, predicted_next + 10]  # ตัวอย่างของการทำนายสามารถปรับเปลี่ยนตามความต้องการ
+        predictions = [predicted_next, predicted_next -1 , predicted_next + 10]  #
         for i, pred in enumerate(predictions):
             plt.plot(len(sequence), pred, marker='o', color=['red', 'green', 'orange'][i], linestyle='--')
             plt.text(len(sequence), pred, str(pred), ha='center', va='bottom')

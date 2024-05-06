@@ -12,10 +12,11 @@ class GraphLearnerGUI(App):
         super(GraphLearnerGUI, self).__init__(*args)
         self.learner = graph_learner()
         self.graph_containers = {}
+        
 
     def main(self):
         self.history = []  # เก็บประวัติการเลือก
-        self.history_box = gui.Listbox(width=200, height=300)
+        self.history_box = gui.ListBox(width=200, height=300)
         self.history_box.onselection.do(self.edit_history)
         container = gui.VBox(width=600, height=1000, style={'margin': '0px auto'})
         self.lbl_instruction = gui.Label('Please enter a sequence of numbers, each sequence separated by a new line:')
