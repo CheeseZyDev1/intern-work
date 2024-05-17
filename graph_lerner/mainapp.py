@@ -3,7 +3,6 @@ from remi import start, App
 import matplotlib.pyplot as plt
 import io
 import base64
-import random
 from intern_learner import graph_learner
 
 class GraphLearnerGUI(App):
@@ -107,29 +106,33 @@ class GraphLearnerGUI(App):
             button.set_text(f'Selected Prediction {prediction_idx}: {chosen_prediction}')
             button.set_style({'background-color': 'lightgreen', 'color': 'black'})
 
-        # แยกการทำนายใหม่จากคำทำนายที่เลือก
         self.update_branch_graph(graph_container, numbers, self.selected_predictions, level)
 
     def update_branch_graph(self, graph_container, numbers, predictions, level):
         plt.figure(figsize=(10, 5))
-        x_values = list(range(-len(numbers), 0))
+        x_values = list(range(1, len(numbers) + 2))  # Add one extra for the space between
 
         # Plot historical data
-        plt.plot(x_values, numbers, marker='o', linestyle='-', color='blue')
+        plt.plot(x_values[:-1], numbers, marker='o', linestyle='-', color='blue', label='Historical Data')
 
-        # Plot predictions
+        # Plot zero line
+        plt.axvline(x=len(numbers), color='black', linestyle='-')
+        plt.xticks(list(range(1, len(numbers) + 2)), list(range(1, len(numbers) + 1)) + [0])
+
+        # Plot predictions (not connected initially)
         colors = ['red', 'green', 'orange']
         for i, pred in enumerate(predictions):
-            new_predictions = self.learner.gen_next_n(numbers + [pred], 2)
-            for j, (idx, next_pred) in enumerate(enumerate(new_predictions, start=1)):
-                plt.plot([level * 2, level * 2 + 1], [pred, next_pred], marker='o', color=colors[j % len(colors)], linestyle='--')
-                plt.text(level * 2 + 1, next_pred, f'{next_pred}', ha='left', va='bottom', color=colors[j % len(colors)])
+            plt.plot([len(numbers) + 1], [pred], marker='o', color=colors[i % len(colors)], linestyle='--', label=f'Prediction {i+1}')
+            plt.text(len(numbers) + 1, pred, f'{pred}', ha='center', va='bottom', color=colors[i % len(colors)])
 
-        plt.title("Graph Showing Historical Data and Branch Predictions")
-        plt.xlabel("Index of sequence (shifted to center at 0)")
+        for i, num in enumerate(numbers):
+            plt.text(x_values[i], num, f'{num}', ha='center', va='bottom', color='blue')
+
+        plt.title("Graph Showing Historical Data and Predictions")
+        plt.xlabel("Index of sequence")
         plt.ylabel("Value")
         plt.grid(True)
-        plt.legend(['Historical Data'] + [f'Branch Prediction {idx}' for idx in range(1, len(predictions) * 2 + 1)])
+        plt.legend()
 
         buffer = io.BytesIO()
         plt.savefig(buffer, format='png')
@@ -141,20 +144,27 @@ class GraphLearnerGUI(App):
 
     def plot_sequence(self, sequence, predictions, level, graph_container):
         plt.figure(figsize=(10, 5))
-        x_values = list(range(-len(sequence), 0))
+        x_values = list(range(1, len(sequence) + 2))  # Add one extra for the space between
 
-        plt.plot(x_values, sequence, marker='o', linestyle='-', color='blue')
+        plt.plot(x_values[:-1], sequence, marker='o', linestyle='-', color='blue', label='Historical Data')
+
+        # Plot zero line
+        plt.axvline(x=len(sequence), color='black', linestyle='-')
+        plt.xticks(list(range(1, len(sequence) + 2)), list(range(1, len(sequence) + 1)) + [0])
 
         colors = ['red', 'green', 'orange']
         for i, (idx, pred) in enumerate(predictions.items(), start=1):
-            plt.plot([level * 2, level * 2 + 1], [sequence[-1], pred], marker='o', color=colors[i % len(colors)], linestyle='--')
-            plt.text(level * 2 + 1, pred, f'{pred}', ha='left', va='bottom', color=colors[i % len(colors)])
+            plt.plot([len(sequence) + 1], [pred], marker='o', color=colors[i % len(colors)], linestyle='--', label=f'Prediction {idx}')
+            plt.text(len(sequence) + 1, pred, f'{pred}', ha='center', va='bottom', color=colors[i % len(colors)])
+
+        for i, num in enumerate(sequence):
+            plt.text(x_values[i], num, f'{num}', ha='center', va='bottom', color='blue')
 
         plt.title("Graph Showing Historical Data and Predictions")
-        plt.xlabel("Index of sequence (shifted to center at 0)")
+        plt.xlabel("Index of sequence")
         plt.ylabel("Value")
         plt.grid(True)
-        plt.legend(['Historical Data'] + [f'Prediction {idx}' for idx in predictions.keys()])
+        plt.legend()
 
         buffer = io.BytesIO()
         plt.savefig(buffer, format='png')
@@ -166,15 +176,15 @@ class GraphLearnerGUI(App):
 
     def add_to_sequence(self, widget):
         if self.selected_predictions:
+            history_entry = f"Round {self.level + 1}: Added {self.selected_predictions}"
+            self.history_area.append(gui.Label(history_entry, style={'font-size': '14px', 'margin-bottom': '5px', 'color': '#333'}))
+            
             self.current_numbers.extend(self.selected_predictions)
             self.selected_predictions = []
-            level = len(self.current_numbers) // 3  # Update the level based on the number of predictions
+            self.level += 1
 
             new_predictions = self.learner.gen_next_n(self.current_numbers, 3)  # Generate new predictions
-            self.update_branch_graph(self.output_area, self.current_numbers, new_predictions, level)  # Update graph with new data
-
-            history_entry = f'Started with: {self.current_numbers[0]} -> ' + ' -> '.join(map(str, self.current_numbers[1:]))
-            self.history_area.append(gui.Label(history_entry, style={'font-size': '14px', 'margin-bottom': '5px', 'color': '#333'}))
+            self.update_graph(self.output_area, self.current_numbers, new_predictions, self.level)  # Update graph with new data
 
 if __name__ == "__main__":
     start(GraphLearnerGUI, address='0.0.0.0', port=8081, start_browser=True)
