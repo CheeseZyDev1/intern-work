@@ -13,7 +13,9 @@ class GraphLearnerGUI(App):
         self.selected_predictions = []
         self.level = 0
         self.current_numbers = []
+        self.predictions = []
         self.add_to_history_button = None
+        self.graph_container = None
 
     def main(self):
         container = gui.VBox(width=800, height=1200, style={'margin': '0px auto', 'padding': '20px', 'font-family': 'Arial, sans-serif', 'background-color': '#f5f5f5', 'border-radius': '10px'})
@@ -52,7 +54,9 @@ class GraphLearnerGUI(App):
         self.selected_predictions = []
         self.level = 0
         self.current_numbers = []
+        self.predictions = []
         self.add_to_history_button = None
+        self.graph_container = None
 
     def on_button_pressed(self, widget):
         self.output_area.empty()
@@ -67,10 +71,11 @@ class GraphLearnerGUI(App):
 
             self.learner.add_data(numbers)
             self.current_numbers = numbers
-            predicted_next = self.learner.gen_next_n(numbers, 3)  # Generate 3 predictions initially
-            graph_container = gui.VBox(width=760, height=400, style={'margin-top': '20px'})
-            self.output_area.append(graph_container)
-            self.update_graph(graph_container, numbers, predicted_next, 0)
+            self.predictions = self.learner.gen_next_n(numbers, 3)  # Generate 3 predictions initially
+            if not self.graph_container:
+                self.graph_container = gui.VBox(width=760, height=400, style={'margin-top': '20px'})
+                self.output_area.append(self.graph_container)
+            self.update_graph(self.graph_container, numbers, self.predictions, 0)
 
     def update_graph(self, graph_container, numbers, predictions, level=0):
         if 'img' not in graph_container.children or 'label' not in graph_container.children:
@@ -86,7 +91,7 @@ class GraphLearnerGUI(App):
         prediction_buttons = gui.HBox(style={'justify-content': 'center', 'margin-top': '10px'})
         for i, pred in new_predictions.items():
             btn = gui.Button(f'Choose Prediction {i}: {pred}', width=200, height=40, style={'margin': '5px', 'background-color': '#2196F3', 'color': 'white', 'font-size': '14px', 'border': 'none', 'border-radius': '5px', 'cursor': 'pointer'})
-            btn.onclick.do(self.choose_prediction, graph_container, numbers, pred, i, level + 1, btn)
+            btn.onclick.do(self.choose_prediction, graph_container, numbers, new_predictions, pred, i, level + 1, btn)
             prediction_buttons.append(btn, key=f'button_{i}')
 
         graph_container.append(prediction_buttons, key='prediction_buttons')
@@ -96,7 +101,7 @@ class GraphLearnerGUI(App):
             self.add_to_history_button.onclick.do(self.add_to_sequence)
             self.output_area.append(self.add_to_history_button)
 
-    def choose_prediction(self, widget, graph_container, numbers, chosen_prediction, prediction_idx, level, button):
+    def choose_prediction(self, widget, graph_container, numbers, predictions, chosen_prediction, prediction_idx, level, button):
         if chosen_prediction in self.selected_predictions:
             self.selected_predictions.remove(chosen_prediction)
             button.set_text(f'Choose Prediction {prediction_idx}: {chosen_prediction}')
@@ -106,9 +111,9 @@ class GraphLearnerGUI(App):
             button.set_text(f'Selected Prediction {prediction_idx}: {chosen_prediction}')
             button.set_style({'background-color': 'lightgreen', 'color': 'black'})
 
-        self.update_branch_graph(graph_container, numbers, self.selected_predictions, level)
+        self.update_branch_graph(graph_container, numbers, predictions, self.selected_predictions, level)
 
-    def update_branch_graph(self, graph_container, numbers, predictions, level):
+    def update_branch_graph(self, graph_container, numbers, predictions, selected_predictions, level):
         plt.figure(figsize=(10, 5))
         x_values = list(range(1, len(numbers) + 2))  # Add one extra for the space between
 
@@ -119,11 +124,14 @@ class GraphLearnerGUI(App):
         plt.axvline(x=len(numbers), color='black', linestyle='-')
         plt.xticks(list(range(1, len(numbers) + 2)), list(range(1, len(numbers) + 1)) + [0])
 
-        # Plot predictions (not connected initially)
+        # Plot predictions
         colors = ['red', 'green', 'orange']
-        for i, pred in enumerate(predictions):
-            plt.plot([len(numbers) + 1], [pred], marker='o', color=colors[i % len(colors)], linestyle='--', label=f'Prediction {i+1}')
-            plt.text(len(numbers) + 1, pred, f'{pred}', ha='center', va='bottom', color=colors[i % len(colors)])
+        for i, (pred_idx, pred) in enumerate(predictions.items()):
+            if pred in selected_predictions:
+                plt.plot([len(numbers), len(numbers) + 1], [numbers[-1], pred], marker='o', color=colors[pred_idx % len(colors)], linestyle='--', label=f'Prediction {pred_idx+1}')
+            else:
+                plt.plot([len(numbers) + 1], [pred], marker='o', color=colors[pred_idx % len(colors)], linestyle='--', label=f'Prediction {pred_idx+1}')
+            plt.text(len(numbers) + 1, pred, f'{pred}', ha='center', va='bottom', color=colors[pred_idx % len(colors)])
 
         for i, num in enumerate(numbers):
             plt.text(x_values[i], num, f'{num}', ha='center', va='bottom', color='blue')
@@ -184,7 +192,7 @@ class GraphLearnerGUI(App):
             self.level += 1
 
             new_predictions = self.learner.gen_next_n(self.current_numbers, 3)  # Generate new predictions
-            self.update_graph(self.output_area, self.current_numbers, new_predictions, self.level)  # Update graph with new data
+            self.update_graph(self.graph_container, self.current_numbers, new_predictions, self.level)  # Update graph with new data
 
 if __name__ == "__main__":
     start(GraphLearnerGUI, address='0.0.0.0', port=8081, start_browser=True)
